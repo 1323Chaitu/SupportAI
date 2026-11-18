@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./db.js";
+
 import authRoutes from "./routes/auth.js";
 import customerRoutes from "./routes/customers.js";
 import ticketRoutes from "./routes/tickets.js";
@@ -13,13 +14,31 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({
-  origin: process.env.CLIENT_URL
-}));
+// Allowed frontend origins
+const allowedOrigins = [
+  "http://localhost:5173",
+  ...(process.env.CLIENT_URL || "")
+    .split(",")
+    .map((url) => url.trim())
+    .filter(Boolean)
+];
+
+// CORS configuration
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    }
+  })
+);
 
 app.use(express.json());
 
-// Authentication routes
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/tickets", ticketRoutes);
@@ -45,7 +64,7 @@ app.get("/api/test-db", async (req, res) => {
       databaseTime: result.rows[0].current_time
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("Database connection error:", error.message);
 
     res.status(500).json({
       message: "Database connection failed"
@@ -53,22 +72,8 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
+// Start server
 const PORT = process.env.PORT || 5000;
-
-app.get("/api/check-users", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT id, name, email FROM users ORDER BY id"
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({
-      message: "Unable to retrieve users"
-    });
-  }
-});
 
 app.listen(PORT, () => {
   console.log(`SupportAI backend running on port ${PORT}`);
