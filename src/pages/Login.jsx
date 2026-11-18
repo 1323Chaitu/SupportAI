@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Bot, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function Login() {
   const navigate = useNavigate();
 
@@ -11,7 +13,7 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-    
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -20,7 +22,7 @@ function Login() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/login",
+        `${API_URL}/api/auth/login`,
         {
           method: "POST",
           headers: {
@@ -31,31 +33,30 @@ function Login() {
             password
           })
         }
-    );
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      setError(data.message || "Login failed.");
-      return;
-    }
-
-    sessionStorage.setItem("supportai_token", data.token);
-    sessionStorage.setItem(
-      "supportai_user",
-      JSON.stringify(data.user)
-    );
-
-    navigate("/", { replace: true });
-
-      } catch (error) {
-        console.error("Login error:", error);
-        setError("Unable to connect to the backend.");
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        setError(data.message || "Login failed.");
+        return;
       }
-    };
 
+      sessionStorage.setItem("supportai_token", data.token);
+      sessionStorage.setItem(
+        "supportai_user",
+        JSON.stringify(data.user)
+      );
+
+      navigate("/", { replace: true });
+
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Unable to connect to the backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="login-page">
